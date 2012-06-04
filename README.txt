@@ -1,3 +1,8 @@
+I've forked this from Creatrope's code at https://docs.google.com/file/d/0B5Sg6E9g_zOXMzQxZmVkYjktNjQwZi00MjgxLTk4YzQtNGIwYzI0ZjA0Njg3/edit?pli=1. There doesn't seem to have been any work done on this since 2010 and some of the Arduino API has been updated since then.
+
+-- Doug
+
+
 V4 X10 Send/Receive Code
 by creatrope
 
