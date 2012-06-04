@@ -1,0 +1,77 @@
+#######################################
+# Syntax Coloring Map For Test
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+x10	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+write	KEYWORD2
+sendBits	KEYWORD2
+waitForZeroCross	KEYWORD2
+version	KEYWORD2
+
+######################################
+# Instances (KEYWORD2)
+#######################################
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+A	LITERAL1
+B	LITERAL1	
+C	LITERAL1
+D	LITERAL1
+E	LITERAL1
+F	LITERAL1
+G	LITERAL1
+H	LITERAL1
+I	LITERAL1
+J	LITERAL1
+K	LITERAL1
+L	LITERAL1
+M	LITERAL1
+N	LITERAL1
+O	LITERAL1
+P	LITERAL1
+
+UNIT_1	LITERAL1
+UNIT_2	LITERAL1
+UNIT_3	LITERAL1
+UNIT_4	LITERAL1
+UNIT_5	LITERAL1
+UNIT_6	LITERAL1
+UNIT_7	LITERAL1
+UNIT_8	LITERAL1
+UNIT_9	LITERAL1
+UNIT_10	LITERAL1
+UNIT_11	LITERAL1
+UNIT_12	LITERAL1
+UNIT_13	LITERAL1
+UNIT_14	LITERAL1
+UNIT_15	LITERAL1
+UNIT_16	LITERAL1
+
+ALL_UNITS_OFF	LITERAL1
+ALL_LIGHTS_ON	LITERAL1
+ON	LITERAL1
+OFF	LITERAL1
+DIM	LITERAL1
+BRIGHT	LITERAL1
+ALL_LIGHTS_OFF	LITERAL1
+EXTENDED_CODE	LITERAL1
+HAIL_REQUEST	LITERAL1
+HAIL_ACKNOWLEDGE	LITERAL1
+PRE_SET_DIM	LITERAL1
+EXTENDED_DATA	LITERAL1
+STATUS_ON	LITERAL1
+STATUS_OFF	LITERAL1
+STATUS_REQUEST	LITERAL1
+
