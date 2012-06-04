@@ -14,7 +14,7 @@
 */
 
 #include <stdlib.h>
-#include "WProgram.h"
+#include "Arduino.h"
 #include "x10.h"
 #include "x10constants.h"
 #include "PSC05.h"

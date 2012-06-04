@@ -14,7 +14,7 @@
 
 // include types & constants of Wiring core API
 #include <stdlib.h>
-#include "WProgram.h"
+#include "Arduino.h"
 #include "pins_arduino.h"
 
 // library interface description
