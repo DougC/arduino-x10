@@ -59,17 +59,16 @@ void x10::init(int zeroCrossingPin, int dataPin, int rp, int led)
   this->dataPin = dataPin;        		// the output data pin
   
   // Set I/O modes:
-  pinMode(this->zeroCrossingPin, INPUT);
+  pinMode(this->zeroCrossingPin, INPUT_PULLUP); // set 20K pullup (low active signal)
   pinMode(this->dataPin, OUTPUT);
-  digitalWrite(this->zeroCrossingPin, HIGH);      // set 20K pullup (low active signal)
   
   // for receive
   zcross_pin = zeroCrossingPin;
 
   if (rp>0) {
-    pinMode(rcve_pin,INPUT);             // receive X10 commands - low = 1
-    pinMode(zcross_pin,INPUT);           // zero crossing - 60 Hz square wave
-    digitalWrite(rcve_pin, HIGH);        // set 20K pullup (low active signal)
+    pinMode(rcve_pin,INPUT_PULLUP);             // receive X10 commands - low = 1 - INPUT_PULLUP sets 20K pullup (low active signal)
+    pinMode(zcross_pin,INPUT_PULLUP);           // zero crossing - 60 Hz square wave
+
     attachInterrupt(0,x10_Check_Rcvr_wrapper,CHANGE);// (pin 2) trigger zero cross
 
     X10BitCnt=0; // counts bit sequence in frame
