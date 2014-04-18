@@ -17,7 +17,7 @@
 #include "Arduino.h"
 #include "x10.h"
 #include "x10constants.h"
-#include "PSC05.h"
+#include "psc05.h"
 
 volatile unsigned long mask;           // MSB first - bit 12 - bit 0
 volatile unsigned int X10BitCnt; // counts bit sequence in frame
