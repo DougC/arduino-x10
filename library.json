@@ -1,0 +1,11 @@
+{
+  "name": "Arduino-X10",
+  "keywords": "x10, protocol, ac",
+  "description": "Sending X10 signals over AC power lines (PL513, TW523 and etc)",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/DougC/arduino-x10.git"
+  },
+  "exclude": "examples/*/applet"
+}
