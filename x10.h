@@ -1,6 +1,6 @@
 /*
  	Stepper.h - - Stepper library for Wiring/Arduino - Version 0.4
-  
+
   Original library		(0.1) by Tom Igoe.
   Timing bug fixes		(0.2) "   "   "
 
@@ -25,7 +25,8 @@ class x10 {
     x10(int zeroCrossingPin, int dataPin, int rp);
     x10(int zeroCrossingPin, int dataPin);
     // write command method:
-	void write(byte houseCode, byte numberCode, int numRepeats);
+    void write(byte houseCode, byte numberCode, int numRepeats);
+    void writeXTBIIR(byte ModeCode, byte numberCode);
     int version(void);
     boolean received(void);
     byte unitCode(void);  // returns integer unit code
