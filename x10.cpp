@@ -1,16 +1,16 @@
 /*
   x10.cpp - X10 transmission library for Arduino version 0.4
-  
+
   Original library				(0.1) by Tom Igoe.
   Timing bug fixes				(0.2) "   "   "
   #include bug fixes for 0012	                (0.3) "   "   "
   Integrates brohogan.blogspot.com X10 receive code from Arduino Playground (0.4)
-    
+
   Zero crossing algorithms borrowed from David Mellis' shiftOut command
   for Arduino.
-  
+
   The circuits can be found at http://www.arduino.cc/en/Tutorial/x10
- 
+
 */
 
 #include <stdlib.h>
@@ -25,9 +25,9 @@ volatile unsigned int ZCrossCnt;   // counts Z crossings in frame
 volatile unsigned long rcveBuff;       // holds the 13 bits received in a frame
 volatile boolean X10rcvd;      // true if a new frame has been received
 boolean _newX10;         // both the unit frame and the command frame received
-byte _houseCode,_unitCode,_cmndCode;   // 
+byte _houseCode,_unitCode,_cmndCode;   //
 byte _hc,_uc;
-byte startCode;   
+byte startCode;
 byte zcross_pin;
 byte rcve_pin;
 byte led_pin;
@@ -57,11 +57,11 @@ void x10::init(int zeroCrossingPin, int dataPin, int rp, int led)
 
   this->zeroCrossingPin = zeroCrossingPin;      // the zero crossing pin
   this->dataPin = dataPin;        		// the output data pin
-  
+
   // Set I/O modes:
   pinMode(this->zeroCrossingPin, INPUT_PULLUP); // set 20K pullup (low active signal)
   pinMode(this->dataPin, OUTPUT);
-  
+
   // for receive
   zcross_pin = zeroCrossingPin;
 
@@ -99,7 +99,7 @@ void x10::write(byte houseCode, byte numberCode, int numRepeats) {
   // repeat as many times as requested:
   for (int i = 0; i < numRepeats; i++) {
   	// send the three parts of the command:
-  	sendBits(startCode, 4, true);	
+  	sendBits(startCode, 4, true);
     	sendBits(houseCode, 4, false);
     	sendBits(numberCode, 5, false);
     }
@@ -111,20 +111,56 @@ void x10::write(byte houseCode, byte numberCode, int numRepeats) {
   if (rcve_pin>0) { attachInterrupt(0,x10_Check_Rcvr_wrapper,CHANGE); } // (pin 2) trigger zero cross
 }
 /*
+
+Code to program or get status of XTB IIR
+
+*/
+void x10::writeXTBIIR(byte ModeCode, byte numberCode) {
+  byte startCode = B1110; 		// every X10 command starts with this
+  byte houseCode = B1100;		// XTB_IIR houseCOde is alway P
+					// All programming for XTB IIR begins with the key sequence 9-8-2
+  byte Key_Sequence9 = B01110;		// 9
+  byte Key_Sequence8 = B11010;		// 8
+  byte Key_Sequence2 = B11100;		// 2
+
+  if (rcve_pin>0) { detachInterrupt(0); }
+  // repeat as many times as requested:
+   	// send the three parts of the command:
+  sendBits(startCode, 4, true);
+  sendBits(houseCode, 4, false);
+  delayMicroseconds(10000);
+  sendBits(Key_Sequence9, 5, false);
+  delayMicroseconds(10000);
+  sendBits(Key_Sequence8, 5, false);
+  delayMicroseconds(10000);
+  sendBits(Key_Sequence2, 5, false);
+  delayMicroseconds(10000);
+  sendBits(ModeCode, 5, false);
+  sendBits(numberCode, 5, false);
+
+    // if this isn't a bright or dim command, it should be followed by
+    // a delay of 3 power cycles (or 6 zero crossings):
+    if ((numberCode != BRIGHT) && (numberCode != DIM)) {
+    	waitForZeroCross(this->zeroCrossingPin, 6);
+    }
+  if (rcve_pin>0) { attachInterrupt(0,x10_Check_Rcvr_wrapper,CHANGE); } // (pin 2) trigger zero cross
+}
+
+/*
 	Writes a sequence of bits out.  If the sequence is not a start code,
 	it repeats the bits, inverting them.
 */
 
 void x10::sendBits(byte cmd, byte numBits, byte isStartCode) {
   byte thisBit;		// copy of command so we can shift bits
-  
+
 	// iterate the number of bits to be shifted:
 	for(int i=1; i<=numBits; i++) {
 		// wait for a zero crossing change:
 		waitForZeroCross(this->zeroCrossingPin, 1);
 		// shift off the last bit of the command:
 		thisBit = !!(cmd & (1 << (numBits - i)));
-		
+
 		// repeat once for each phase:
 		for (int phase = 0; phase < 3; phase++) {
 			// set the data Pin:
@@ -134,7 +170,7 @@ void x10::sendBits(byte cmd, byte numBits, byte isStartCode) {
 			digitalWrite(this->dataPin, LOW);
 			delayMicroseconds(BIT_DELAY);
 		}
-		
+
 		// if this command is a start code, don't
 		// send its complement.  Otherwise do:
 		if(!isStartCode) {
@@ -159,7 +195,7 @@ void x10::sendBits(byte cmd, byte numBits, byte isStartCode) {
 */
 void x10::waitForZeroCross(int pin, int howManyTimes) {
 	unsigned long cycleTime = 0;
-	
+
   	// cache the port and bit of the pin in order to speed up the
   	// pulse width measuring loop and achieve finer resolution.  calling
   	// digitalRead() instead yields much coarser resolution.
@@ -169,10 +205,10 @@ void x10::waitForZeroCross(int pin, int howManyTimes) {
   	for (int i = 0; i < howManyTimes; i++) {
 		// wait for pin to change:
     	if((*portInputRegister(port) & bit))
-    	 	while((*portInputRegister(port) & bit)) 
+    	 	while((*portInputRegister(port) & bit))
         		cycleTime++;
     	else
-      		while(!(*portInputRegister(port) & bit)) 
+      		while(!(*portInputRegister(port) & bit))
         		cycleTime++;
   		}
 }
@@ -186,7 +222,7 @@ int x10::version(void)
   Serial.print(this->zeroCrossingPin); Serial.print(" ");
   Serial.print(this->dataPin); Serial.print(" ");
   Serial.print(rcve_pin); Serial.print(" ");
-  Serial.println(led_pin); 
+  Serial.println(led_pin);
   return 4;
 }
 
@@ -275,7 +311,7 @@ void x10::Parse_Frame() {   // parses the receive buffer to get House, Unit, and
   _houseCode = rcveBuff & 0x0F;         // mask the last 4 bits to get the house code
   _hc = _houseCode;
   for (byte i=0; i<16; i++){           // use lookup table to get the actual command #
-    if (House[i] == _houseCode){ 
+    if (House[i] == _houseCode){
       _houseCode = i+65;                // this gives House 'A' - 'P'
       break;                           // stop search when found!
     }
@@ -303,16 +339,16 @@ void Parse_Frame() {   // parses the receive buffer to get House, Unit, and Cmnd
 
   // start with the House code - SB the same for both frames
   for (byte i=0; i<16; i++){            // use lookup table to get the actual command #
-    if (House[i] == rawHouse){ 
+    if (House[i] == rawHouse){
       X10.House = i+65;                 // this gives House 'A' - 'P'
       foundMatch = true;
       break;                            // stop search when found!
     }
   }
   // if no match, wipe out the start byte to abort the command
-  if (foundMatch == false) X10.Start = 0; 
+  if (foundMatch == false) X10.Start = 0;
   // if it's the 1st frame, save off the house
-  if (foundMatch == true && procCmnd == false) firstHouse = X10.House; 
+  if (foundMatch == true && procCmnd == false) firstHouse = X10.House;
   // if it's the 2nd frame, compare the house code for the 2 frames
   if (foundMatch == true && procCmnd == true){
     if (X10.House != firstHouse) X10.Start = 0; // abort if not the same
