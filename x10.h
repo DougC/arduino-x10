@@ -5,7 +5,16 @@
   Timing bug fixes		(0.2) "   "   "
 
 	Sends X10 commands.
-
+	
+	2017-APR-17	Richard Hughes	Version 0.5
+  
+	-	Added timing varaibles for bitLength, bitDelay, offsetDelay and
+		halfCycleDelay so that timings can be selected and runtime.
+	-	Moved definition of receive pin and LED pin from x10.cpp
+	-	Created new constructor without parameters and moved the init 
+		function to be public so that the class can be created and
+		initialised seperately.
+	
 */
 
 // ensure this library description is only included once
@@ -24,6 +33,7 @@ class x10 {
     x10(int zeroCrossingPin, int dataPin, int rp, int led);
     x10(int zeroCrossingPin, int dataPin, int rp);
     x10(int zeroCrossingPin, int dataPin);
+	x10();
     // write command method:
 	void write(byte houseCode, byte numberCode, int numRepeats);
     int version(void);
@@ -39,10 +49,21 @@ class x10 {
     void Parse_Frame();
     void attach();
     void detach();
+	void init(int zeroCrossingPin, int dataPin, int rp, int led);
+	void init(int zeroCrossingPin, int dataPin, int rp);
+	void init(int zeroCrossingPin, int dataPin);
+	void detectMainsFreq();
+	// Timing varaibles.
+	float mainsFrequency;
+	long bitDelay;
+	long bitLength;
+	long offsetDelay;
+	long halfCycleDelay;
   private:
-    void  init(int zeroCrossingPin, int dataPin, int rp, int led);
     int zeroCrossingPin;	// AC zero crossing pin
     int dataPin;			// data out pin
+	int recvPin;			// Receive data pin
+	int ledPin;				// LED pin
     // sends the individual bits of the commands:
     void sendBits(byte cmd, byte numBits, byte isStartCode);
     // checks for AC zero crossing

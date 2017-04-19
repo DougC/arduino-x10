@@ -1,5 +1,5 @@
 /*
-  RFID-to-X10 reader
+ X10 multi
  
  Turns on and off AC appliances. Example was built using a PL513
  X10 One-Way Interface Module from http://www.smarthome.com 
@@ -20,21 +20,23 @@
 #include <x10.h>
 #include <x10constants.h>
 
-#define zcPin 9         // the zero crossing detect pin
-#define dataPin 8       // the X10 data out pin
-#define repeatTimes 1   // how many times each X10 message should repeat
+#define zcPin 2         // the zero crossing detect pin
+#define dataPin 3       // the X10 data out pin
+#define repeatTimes 3   // how many times each X10 message should repeat
 // in an electrically noisy environment, you  
 // can set this higher.
 
 
 // set up a new x10  library instance:
-x10 myHouse =  x10(zcPin, dataPin);
+x10 myHouse;
 
 void setup() {
   // begin serial:
-  Serial.begin(dataRate);
+  Serial.begin(57600);
+  myHouse.init(zcPin, dataPin);
+  Serial.println(myHouse.version());
   // Turn off all lights:
-  myHouse.write(A, ALL_UNITS_OFF,repeatTimes);
+  myHouse.write(HOUSE_A, ALL_UNITS_OFF,repeatTimes);
 }
 
 void loop() {

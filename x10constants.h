@@ -1,10 +1,24 @@
+/*
+2017-APR-17	Richard Hughes	Version 0.5
+  
+	-	Added timing definitions for 50Hz mains frequency measured with
+		a logic analyser when running on Arduino Nano.
+*/
+
 #ifndef HX10C
 #define HX10C
 
 #define HIGH 0x1
 #define LOW  0x0
-#define BIT_DELAY 1778    	// 1778 us between bit repeats in a half-cycle
-#define BIT_LENGTH 800		// each bit is slightly less than 1ms long
+
+#define BIT_DELAY 1778        // 1778 us between bit repeats in a half-cycle
+#define BIT_LENGTH 800        // each bit is slightly less than 1ms long
+
+
+// Timings for 50Hz mains frequency
+#define BIT_DELAY_50 2300	// Microseconds between bit repeats in a half-cycle for 3 phase mains.
+#define BIT_LENGTH_50 1000	// Each bit shoud be 1ms long but Arduino delay is not precise.
+
 
 #define	HOUSE_A	B0110
 #define HOUSE_B	B1110	

@@ -1,9 +1,19 @@
+/*
+2017-APR-17	Richard Hughes	Version 0.5
+  
+	-	Added timing definitions for 50Hz mains frequency.
+*/
+
 #ifndef LPCS05
 #define LPCS05
 // Defines and constants for PSC05 receiving
 
-#define OFFSET_DELAY     500 	// uS from zero cross to center of bit (sugg 500-700 us)
-#define HALF_CYCLE_DELAY 8334 	// Calculated 8334 uS between bit repeats in a half-cycle
+#define OFFSET_DELAY     500     // uS from zero cross to center of bit (sugg 500-700 us)
+#define HALF_CYCLE_DELAY 8334     // Calculated 8334 uS between bit repeats in a half-cycle
+
+// Timings for 50Hz mains frequency
+#define OFFSET_DELAY_50     800		// Microseconds from zero cross to center of bit
+#define HALF_CYCLE_DELAY_50 10000	// Microseconds between bit repeats in a half-cycle
 
 #ifndef ON                      // use same defines from x10constants.h for rcvd cmnds
 #define ON   B00101             // these are examples

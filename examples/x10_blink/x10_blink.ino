@@ -20,20 +20,22 @@
 #define dataPin 3
 
 // set up a new x10 instance:
-x10 myHouse =  x10(zcPin, dataPin);
+x10 myHouse;
 
 void setup() {
-  Serial.begin(9600);
+	Serial.begin(57600);
+	myHouse.init(zcPin, dataPin);
+	Serial.println(myHouse.version());
 }
 
 void loop() {
-  Serial.println("Lights on:");
-  // send a "lights on" command 3 times:
-  myHouse.write(HOUSE_A, ON,3);
+	Serial.println("Lights on:");
+	// send a "lights on" command 3 times:
+	myHouse.write(HOUSE_A, ON,3);
 
-  delay(500);
-  Serial.println("Lights off:");
-  // send a "lights off" command 3 times:
-  myHouse.write(HOUSE_A, OFF,3);
-  delay(500);
+	delay(500);
+	Serial.println("Lights off:");
+	// send a "lights off" command 3 times:
+	myHouse.write(HOUSE_A, OFF,3);
+	delay(500);
 }

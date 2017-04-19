@@ -8,7 +8,6 @@
  * - Must detach interrup when transmitting with X10 Lib 
  */
 
-#include "WProgram.h"                  // this is needed to compile with Rel. 0013
 #include <x10.h>                       // X10 lib is used for transmitting X10
 #include <x10constants.h>              // X10 Lib constants
 #define RPT_SEND 2 
@@ -18,10 +17,12 @@
 #define TRANS_PIN      5               // YEL pin 4 of PSC05
 #define LED_PIN        13              // for testing 
 
-x10 SX10= x10(ZCROSS_PIN,TRANS_PIN,RCVE_PIN,LED_PIN);// set up a x10 library instance:
+x10 SX10;// set up a x10 library instance:
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(57600);
+  SX10.init(ZCROSS_PIN,TRANS_PIN,RCVE_PIN,LED_PIN);
+  Serial.println(SX10.version());
   delay(500);
   Serial.print("x10 receive/send test");
 }

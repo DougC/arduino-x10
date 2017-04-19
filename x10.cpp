@@ -10,6 +10,21 @@
   for Arduino.
   
   The circuits can be found at http://www.arduino.cc/en/Tutorial/x10
+  
+  2017-APR-17	Richard Hughes	Version 0.5
+  
+	-	Introduced new function detectMainsFreq() called during initialisation
+		to make library work with both 50Hz and 60Hz mains frequencies without
+		user code changes giving the ability for devices using this library to
+		work with 50Hz or 60Hz mains frequencies without modification.
+	-	Moved definition for receive pin and LED pin to x10.h and removed the
+		zcross_in definition as this was already defined in x10.h and so duplicated.
+	-	Enchanced the version function to additionally print the selected mains 
+		frequency to serial.
+	-	Replaced hard coded interrupt number with digitalPinToInterrupt function
+		so that interrupt number is correctly set if a zero crossing pin other than
+		2 is selected.  May also help this code to run on ESP8266 although this
+		has not been tested.
  
 */
 
@@ -27,10 +42,8 @@ volatile boolean X10rcvd;      // true if a new frame has been received
 boolean _newX10;         // both the unit frame and the command frame received
 byte _houseCode,_unitCode,_cmndCode;   // 
 byte _hc,_uc;
-byte startCode;   
-byte zcross_pin;
-byte rcve_pin;
-byte led_pin;
+byte startCode;
+bool autoDetectFreq;   
 
 x10 *object;
 
@@ -46,56 +59,110 @@ void x10_Parse_Frame_wrapper() {
 }
 
 
-
+// Initialise instance of X10 object
 void x10::init(int zeroCrossingPin, int dataPin, int rp, int led)
+{  
+	this->zeroCrossingPin = zeroCrossingPin;      // the zero crossing pin
+	this->dataPin = dataPin;        		// the output data pin
+	this->recvPin = rp;
+	this->ledPin = led;
+	  
+	// Set I/O modes:
+	pinMode(this->zeroCrossingPin, INPUT_PULLUP); // set 20K pullup (low active signal)
+	pinMode(this->dataPin, OUTPUT);
+	if (this->ledPin>0) { pinMode(this->ledPin, OUTPUT); }
+
+	// If we have a receive pin specified.
+	if (this->recvPin>0) {
+		pinMode(this->recvPin,INPUT_PULLUP);             // receive X10 commands - low = 1 - INPUT_PULLUP sets 20K pullup (low active signal)
+		attachInterrupt(digitalPinToInterrupt(this->zeroCrossingPin),x10_Check_Rcvr_wrapper,CHANGE);// trigger zero cross
+		X10BitCnt=0; // counts bit sequence in frame
+		ZCrossCnt=0;   // counts Z crossings in frame
+		X10rcvd=false;      // true if a new frame has been received
+		_newX10=false;         // both the unit frame and the command frame received
+	}
+	
+	// Detect mains frequency.
+	if(autoDetectFreq) {
+			detectMainsFreq();
+	}  else {
+		// Default to 60Hz timings.
+		this->mainsFrequency = 60;
+		this->bitDelay = BIT_DELAY;
+		this->bitLength = BIT_LENGTH;
+		this->offsetDelay = OFFSET_DELAY;
+		this->halfCycleDelay = HALF_CYCLE_DELAY;
+	}
+
+}
+
+void x10::init(int zeroCrossingPin, int dataPin, int rp) {
+	init(zeroCrossingPin,dataPin,rp,0);
+}
+
+void x10::init(int zeroCrossingPin, int dataPin)
 {
-  led_pin=led;
-  rcve_pin = rp;
-
-
-  if (led_pin>0) { pinMode(led_pin, OUTPUT); }
-
-  this->zeroCrossingPin = zeroCrossingPin;      // the zero crossing pin
-  this->dataPin = dataPin;        		// the output data pin
-  
-  // Set I/O modes:
-  pinMode(this->zeroCrossingPin, INPUT_PULLUP); // set 20K pullup (low active signal)
-  pinMode(this->dataPin, OUTPUT);
-  
-  // for receive
-  zcross_pin = zeroCrossingPin;
-
-  if (rp>0) {
-    pinMode(rcve_pin,INPUT_PULLUP);             // receive X10 commands - low = 1 - INPUT_PULLUP sets 20K pullup (low active signal)
-    pinMode(zcross_pin,INPUT_PULLUP);           // zero crossing - 60 Hz square wave
-
-    attachInterrupt(0,x10_Check_Rcvr_wrapper,CHANGE);// (pin 2) trigger zero cross
-
-    X10BitCnt=0; // counts bit sequence in frame
-    ZCrossCnt=0;   // counts Z crossings in frame
-     X10rcvd=false;      // true if a new frame has been received
-     _newX10=false;         // both the unit frame and the command frame received
-   }
+   init(zeroCrossingPin,dataPin,0,0);
 }
 
 x10::x10(int zeroCrossingPin, int dataPin, int rp, int led)
 {
+   autoDetectFreq = false;
    init(zeroCrossingPin,dataPin,rp,led);
+   autoDetectFreq = true;
 }
 x10::x10(int zeroCrossingPin, int dataPin, int rp)
 {
+   autoDetectFreq = false;
    init(zeroCrossingPin,dataPin,rp,0);
+   autoDetectFreq = true;
 }
 x10::x10(int zeroCrossingPin, int dataPin)
 {
+   autoDetectFreq = false;
    init(zeroCrossingPin,dataPin,0,0);
+   autoDetectFreq = true;
 }
+x10::x10()
+{
+	autoDetectFreq = true;
+}
+
+
+/*
+ Establish mains frequency and set appropriate parameters
+ */
+void x10::detectMainsFreq() {
+	Serial.println("Detecting mains frequency ...");
+	// Default parameters for 60Hz
+	this->bitDelay = BIT_DELAY;
+	this->bitLength = BIT_LENGTH;
+	this->offsetDelay = OFFSET_DELAY;
+	this->halfCycleDelay = HALF_CYCLE_DELAY;
+	// Wait for zero crossing before we start counting
+	waitForZeroCross(this->zeroCrossingPin,1); 
+	float startFreqCount = micros();
+	// Wait for 200 half cycles to pass to get an average timing from 100 cycles.
+	waitForZeroCross(this->zeroCrossingPin,200); 
+	float stopFreqCount = micros();
+	// Calculate frequency.
+	this->mainsFrequency = 100000000 / (stopFreqCount - startFreqCount); 
+	// If frequency is below 54 cycles then we assume 50Hz which allows for a 60Hz 
+	// waveform to be 10% below specification.
+	if(this->mainsFrequency < 54) {
+		this->bitDelay = BIT_DELAY_50;
+		this->bitLength = BIT_LENGTH_50;
+		this->offsetDelay = OFFSET_DELAY_50;
+		this->halfCycleDelay = HALF_CYCLE_DELAY_50;
+	} 
+}
+
 /*
 	Writes an X10 command out to the X10 modem
 */
 void x10::write(byte houseCode, byte numberCode, int numRepeats) {
   byte startCode = B1110; 		// every X10 command starts with this
-  if (rcve_pin>0) { detachInterrupt(0); }
+  if (this->recvPin>0) { detachInterrupt(digitalPinToInterrupt(this->zeroCrossingPin)); }
   // repeat as many times as requested:
   for (int i = 0; i < numRepeats; i++) {
   	// send the three parts of the command:
@@ -108,7 +175,7 @@ void x10::write(byte houseCode, byte numberCode, int numRepeats) {
     if ((numberCode != BRIGHT) && (numberCode != DIM)) {
     	waitForZeroCross(this->zeroCrossingPin, 6);
     }
-  if (rcve_pin>0) { attachInterrupt(0,x10_Check_Rcvr_wrapper,CHANGE); } // (pin 2) trigger zero cross
+  if (this->recvPin>0) { attachInterrupt(digitalPinToInterrupt(this->zeroCrossingPin),x10_Check_Rcvr_wrapper,CHANGE); } // trigger zero cross
 }
 /*
 	Writes a sequence of bits out.  If the sequence is not a start code,
@@ -129,10 +196,12 @@ void x10::sendBits(byte cmd, byte numBits, byte isStartCode) {
 		for (int phase = 0; phase < 3; phase++) {
 			// set the data Pin:
 			digitalWrite(this->dataPin, thisBit);
-			delayMicroseconds(BIT_LENGTH);
+			delayMicroseconds(this->bitLength);
 			// clear the data pin:
 			digitalWrite(this->dataPin, LOW);
-			delayMicroseconds(BIT_DELAY);
+			// Only delay between first to phases as final delay is what ever is left before zero cross.
+			// This was we can be a bit more accurate (slighlty more delay between phases) without missing zero cross.
+			if(phase < 2) { delayMicroseconds(this->bitDelay); }
 		}
 		
 		// if this command is a start code, don't
@@ -143,10 +212,12 @@ void x10::sendBits(byte cmd, byte numBits, byte isStartCode) {
 			for (int phase = 0; phase < 3; phase++) {
 				// set the data pin:
 				digitalWrite(this->dataPin, !thisBit);
-				delayMicroseconds(BIT_LENGTH);
+				delayMicroseconds(this->bitLength);
 				// clear the data pin:
 				digitalWrite(dataPin, LOW);
-				delayMicroseconds(BIT_DELAY);
+				// Only delay between first to phases as final delay is what ever is left before zero cross.
+				// This was we can be a bit more accurate (slighlty more delay between phases) without missing zero cross.
+				if(phase < 2) { delayMicroseconds(this->bitDelay); }
 			}
 		}
 	}
@@ -183,11 +254,27 @@ void x10::waitForZeroCross(int pin, int howManyTimes) {
 */
 int x10::version(void)
 {
-  Serial.print(this->zeroCrossingPin); Serial.print(" ");
-  Serial.print(this->dataPin); Serial.print(" ");
-  Serial.print(rcve_pin); Serial.print(" ");
-  Serial.println(led_pin); 
-  return 4;
+	int ver = 5;
+	Serial.print("Zero Crossing Pin: ");
+	Serial.println(this->zeroCrossingPin);
+	Serial.print("Transmit Pin     : ");
+	Serial.println(this->dataPin); 
+	Serial.print("Receive Pin      : ");
+	Serial.println(this->recvPin);
+	Serial.print("LED Indicator Pin: ");
+	Serial.println(this->ledPin);
+	Serial.print("Mains Frequency  : ");
+	Serial.println(this->mainsFrequency); 
+	Serial.print("Bit Length       : ");	
+	Serial.println(this->bitLength);
+	Serial.print("Bit Delay        : ");
+	Serial.println(this->bitDelay);
+	Serial.print("Offset Delat     : ");
+	Serial.println(this->offsetDelay);
+	Serial.print("Half Cycle Delay : ");
+	Serial.println(this->halfCycleDelay);
+	Serial.print("Version          : ");
+	return ver;
 }
 
 boolean x10::received(void)
@@ -224,9 +311,9 @@ byte x10::cmndCode(void)
 
 void x10::Check_Rcvr(){    // ISR - called when zero crossing (on CHANGE)
   if (X10BitCnt == 0) {                // looking for new frame
-    delayMicroseconds(OFFSET_DELAY);   // wait for bit
-    if(digitalRead(rcve_pin)) return;  // still high - no start bit - get out
-    if (led_pin>0) { digitalWrite(led_pin, HIGH); }     // indicate you got something
+    delayMicroseconds(this->offsetDelay);   // wait for bit
+    if(digitalRead(this->recvPin)) return;  // still high - no start bit - get out
+    if (this->ledPin>0) { digitalWrite(this->ledPin, HIGH); }     // indicate you got something
     rcveBuff = 0;
     mask = 0x1000;                     // bitmask with bit 12 set
     rcveBuff = rcveBuff | mask;        // sets bit 12 (highest)
@@ -239,15 +326,15 @@ void x10::Check_Rcvr(){    // ISR - called when zero crossing (on CHANGE)
   ZCrossCnt++;                         // inc the zero crossing count
   // after SC (first 4 bits) ignore the pariety bits - so only read odd crossings
   if (X10BitCnt < 5 || (ZCrossCnt & 0x01)){ // if it's an odd # zero crossing
-    delayMicroseconds(OFFSET_DELAY);   // wait for bit
-    if(!digitalRead(rcve_pin)) rcveBuff = rcveBuff | mask;  // got a 1 set the bit, else skip and leave it 0
+    delayMicroseconds(this->offsetDelay);   // wait for bit
+    if(!digitalRead(this->recvPin)) rcveBuff = rcveBuff | mask;  // got a 1 set the bit, else skip and leave it 0
     mask = mask >> 1;                  // move bit down in bit mask
     X10BitCnt++;
 
     if(X10BitCnt == 13){               // done with frame after 13 bits
-      for (byte i=0;i<5;i++)delayMicroseconds(HALF_CYCLE_DELAY); // need this
+      for (byte i=0;i<5;i++)delayMicroseconds(this->halfCycleDelay); // need this
       X10rcvd = true;                  // a new frame has been received
-      if (led_pin>0) { digitalWrite(led_pin, LOW); }     // indicate you got something
+      if (this->ledPin>0) { digitalWrite(this->ledPin, LOW); }     // indicate you got something
       X10BitCnt = 0;
       x10_Parse_Frame_wrapper();                   // parse out the house & unit code and command
     }
@@ -351,11 +438,11 @@ void Parse_Frame() {   // parses the receive buffer to get House, Unit, and Cmnd
 
 void x10::attach(void)
 {
-   attachInterrupt(0,x10_Check_Rcvr_wrapper,CHANGE);// (pin 2) trigger zero cross
+   attachInterrupt(digitalPinToInterrupt(this->zeroCrossingPin),x10_Check_Rcvr_wrapper,CHANGE);// (pin 2) trigger zero cross
 }
 void x10::detach(void)
 {
-   detachInterrupt(0);                  // must detach interrupt before sending
+   detachInterrupt(digitalPinToInterrupt(this->zeroCrossingPin));                  // must detach interrupt before sending
 }
 
 void x10::debug(void){
