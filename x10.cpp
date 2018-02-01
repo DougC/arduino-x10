@@ -25,6 +25,11 @@
 		so that interrupt number is correctly set if a zero crossing pin other than
 		2 is selected.  May also help this code to run on ESP8266 although this
 		has not been tested.
+		
+	2018-FEB-18   Richard Hughes  Version 0.6
+	
+	-	Added delay(0) in loop within waitForZeroCross to prevent WDT reseting
+		ESP8266.
  
 */
 
@@ -240,11 +245,17 @@ void x10::waitForZeroCross(int pin, int howManyTimes) {
   	for (int i = 0; i < howManyTimes; i++) {
 		// wait for pin to change:
     	if((*portInputRegister(port) & bit))
-    	 	while((*portInputRegister(port) & bit)) 
+    	 	while((*portInputRegister(port) & bit)) {
         		cycleTime++;
+				// Yield to prevent WDT reset
+				delay(0);
+			}
     	else
-      		while(!(*portInputRegister(port) & bit)) 
+      		while(!(*portInputRegister(port) & bit)) {
         		cycleTime++;
+				// Yield to prevent WDT reset
+				delay(0);
+			}
   		}
 }
 
@@ -254,7 +265,7 @@ void x10::waitForZeroCross(int pin, int howManyTimes) {
 */
 int x10::version(void)
 {
-	int ver = 5;
+	int ver = 6;
 	Serial.print("Zero Crossing Pin: ");
 	Serial.println(this->zeroCrossingPin);
 	Serial.print("Transmit Pin     : ");
