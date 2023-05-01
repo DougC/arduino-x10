@@ -67,6 +67,8 @@ void x10_Parse_Frame_wrapper() {
 // Initialise instance of X10 object
 void x10::init(int zeroCrossingPin, int dataPin, int rp, int led)
 {  
+	object = this; // Need to populate object for *_wrapper()
+
 	this->zeroCrossingPin = zeroCrossingPin;      // the zero crossing pin
 	this->dataPin = dataPin;        		// the output data pin
 	this->recvPin = rp;
